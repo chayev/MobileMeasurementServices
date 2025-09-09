@@ -1,4 +1,4 @@
-// Configuration - easily changeable brand settings __
+// Configuration - easily changeable brand settings
 const CONFIG = {
   BRAND_NAME: "SignalFlow Advisory",
   TAGLINE: "Onboard faster. Attribute smarter.",
