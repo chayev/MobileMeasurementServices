@@ -1,0 +1,11 @@
+event_name,platform,param_1,param_2,revenue_param,priority,notes,skan_mapping
+app_open,both,source,medium,,high,Track app launches and attribution,install
+purchase,both,product_id,category,revenue,critical,In-app purchase events,purchase
+subscription_start,both,plan_type,billing_cycle,subscription_value,critical,New subscription events,subscribe
+level_complete,both,level_id,score,,medium,Game progression tracking,level_achieved
+add_to_cart,both,product_id,quantity,value,medium,E-commerce funnel tracking,add_to_cart
+registration,both,method,user_type,,high,User account creation,complete_registration
+tutorial_complete,both,tutorial_id,completion_time,,medium,Onboarding completion,tutorial_completion
+share_content,both,content_type,method,,low,Social sharing events,share
+search,both,query,results_count,,low,In-app search behavior,search
+video_view,both,video_id,duration,,medium,Video engagement tracking,content_view
