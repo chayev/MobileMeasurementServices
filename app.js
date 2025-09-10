@@ -1,499 +1,589 @@
-// Configuration - easily changeable brand settings
-const CONFIG = {
-  BRAND_NAME: "SignalFlow Advisory",
-  TAGLINE: "Onboard faster. Attribute smarter.",
-  CONTACT_EMAIL: "hello@example.com",
-  LEAD_WEBHOOK_URL: "https://example.com/webhook",
-  PRIMARY_COLOR: "#1e2a78",
-  ACCENT_COLOR: "#4f46e5",
-  LOGO_TEXT: "SF",
+/* === SignalFlow — Modern, High-Contrast Theme === */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+/* -------------------------------------------------
+   Design tokens
+--------------------------------------------------*/
+:root {
+  /* Brand */
+  --color-primary: #0891b2; /* can be overridden by app.js */
+  --color-accent: #ec4899;
+
+  /* Surface & text (LIGHT) */
+  --color-bg: #ffffff;
+  --color-fg: #0b1220;         /* darker for strong contrast */
+  --color-muted: #1f2937;      /* was #334155 -> stronger on white */
+  --color-border: #e5e7eb;
+  --color-card: #f9fafb;
+
+  /* Feedback */
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Nav */
+  --nav-bg: rgba(255,255,255,0.92);
+  --nav-fg: #0b1220;
+  --nav-link: #4b5563;         /* clearer default */
+  --nav-link-active: var(--color-primary);
+
+  /* Type scale */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-sans);
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: clamp(2.5rem, 5vw, 4rem);
+
+  /* Spacing */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Layout */
+  --container-max: 1200px;
+  --border-radius: 1rem;       /* slightly rounder, more modern */
+  --border-radius-sm: .625rem;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.05);
+  --shadow-lg: 0 10px 18px rgba(0,0,0,.10);
+  --shadow-xl: 0 22px 28px rgba(0,0,0,.12);
 }
 
-// Analytics stub - logs to dataLayer for GTM integration
-window.dataLayer = window.dataLayer || []
-function track(event, payload = {}) {
-  console.log("Analytics Event:", event, payload)
-  window.dataLayer.push({
-    event: event,
-    ...payload,
-  })
-}
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0b1020;
+    --color-fg: #f1f5f9;       /* brighter for contrast on dark */
+    --color-muted: #cbd5e1;    /* was #94a3b8 -> easier to read */
+    --color-border: #334155;
+    --color-card: #0f172a;
 
-// DOM elements
-const leadModal = document.getElementById("lead-modal")
-const exitModal = document.getElementById("exit-modal")
-const leadForm = document.getElementById("lead-form")
-const exitForm = document.getElementById("exit-form")
-const navLinks = document.querySelectorAll(".nav-link")
-
-// State management
-let currentStep = 1
-let exitIntentShown = false
-let emailCaptured = localStorage.getItem("emailCaptured") === "true"
-
-// Initialize app
-document.addEventListener("DOMContentLoaded", () => {
-  initializeNavigation()
-  initializeModals()
-  initializeForms()
-  initializeAccordion()
-  initializeExitIntent()
-
-  // Apply brand configuration
-  applyBrandConfig()
-
-  track("page_view", { page: "home" })
-})
-
-// Apply brand configuration to DOM
-function applyBrandConfig() {
-  // Update CSS variables
-  document.documentElement.style.setProperty("--color-primary", CONFIG.PRIMARY_COLOR)
-  document.documentElement.style.setProperty("--color-accent", CONFIG.ACCENT_COLOR)
-
-  // Update brand elements
-  document.querySelectorAll(".brand-name").forEach((el) => {
-    el.textContent = CONFIG.BRAND_NAME
-  })
-
-  document.querySelectorAll(".logo").forEach((el) => {
-    el.textContent = CONFIG.LOGO_TEXT
-  })
-
-  // Update contact email
-  document.querySelectorAll('a[href^="mailto:"]').forEach((el) => {
-    el.href = `mailto:${CONFIG.CONTACT_EMAIL}`
-    if (el.textContent.includes("@")) {
-      el.textContent = CONFIG.CONTACT_EMAIL
-    }
-  })
-}
-
-// Navigation functionality
-function initializeNavigation() {
-  // Smooth scroll for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach((link) => {
-    link.addEventListener("click", function (e) {
-      e.preventDefault()
-      const target = document.querySelector(this.getAttribute("href"))
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth" })
-        track("nav_click", { target: this.getAttribute("href") })
-      }
-    })
-  })
-
-  // Update active nav on scroll
-  window.addEventListener("scroll", updateActiveNav)
-}
-
-function updateActiveNav() {
-  const sections = document.querySelectorAll("section[id]")
-  const scrollPos = window.scrollY + 100
-
-  sections.forEach((section) => {
-    const top = section.offsetTop
-    const bottom = top + section.offsetHeight
-    const id = section.getAttribute("id")
-    const navLink = document.querySelector(`.nav-link[href="#${id}"]`)
-
-    if (scrollPos >= top && scrollPos <= bottom) {
-      navLinks.forEach((link) => link.classList.remove("active"))
-      if (navLink) navLink.classList.add("active")
-    }
-  })
-}
-
-// Modal functionality
-function initializeModals() {
-  // Event delegation for modal actions
-  document.addEventListener("click", (e) => {
-    const action = e.target.getAttribute("data-action")
-
-    switch (action) {
-      case "open-form":
-        openModal(leadModal)
-        track("cta_click", { type: "open_form" })
-        break
-      case "close-modal":
-        closeModal(leadModal)
-        break
-      case "close-exit-modal":
-        closeModal(exitModal)
-        break
-      case "download-template":
-        handleTemplateDownload()
-        track("download_click", { type: "template" })
-        break
-      case "scroll-to-contact":
-        document.getElementById("contact").scrollIntoView({ behavior: "smooth" })
-        track("cta_click", { type: "scroll_to_contact" })
-        break
-    }
-  })
-
-  // Close modal on escape key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeModal(leadModal)
-      closeModal(exitModal)
-    }
-  })
-}
-
-function openModal(modal) {
-  modal.classList.add("active")
-  modal.setAttribute("aria-hidden", "false")
-  document.body.style.overflow = "hidden"
-
-  // Focus trap
-  const focusableElements = modal.querySelectorAll("button, input, select, textarea, a[href]")
-  if (focusableElements.length > 0) {
-    focusableElements[0].focus()
+    --nav-bg: rgba(13,18,33,.88);
+    --nav-fg: #f1f5f9;
+    --nav-link: #cbd5e1;       /* clearer nav links on dark */
   }
 }
 
-function closeModal(modal) {
-  modal.classList.remove("active")
-  modal.setAttribute("aria-hidden", "true")
-  document.body.style.overflow = ""
+/* -------------------------------------------------
+   Base & layout
+--------------------------------------------------*/
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.65;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  letter-spacing: -0.01em;                 /* tighter, pro look */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-// Form functionality
-function initializeForms() {
-  // Lead form submission
-  leadForm.addEventListener("submit", handleLeadFormSubmit)
+.container { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--space-4); }
 
-  // Exit form submission
-  exitForm.addEventListener("submit", handleExitFormSubmit)
+/* -------------------------------------------------
+   Typography
+--------------------------------------------------*/
+h1,h2,h3,h4,h5,h6{
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--color-fg);
+  transition: color .2s ease;
+}
+h1{ font-size: var(--text-5xl); font-weight: 800; }
+h2{ font-size: var(--text-4xl); font-weight: 800; }
+h3{ font-size: var(--text-2xl); font-weight: 700; }
+h4{ font-size: var(--text-xl); font-weight: 700; }
+p{ text-wrap: pretty; }
 
-  // Form navigation
-  document.addEventListener("click", (e) => {
-    const action = e.target.getAttribute("data-action")
+/* -------------------------------------------------
+   Navigation
+--------------------------------------------------*/
+.nav{
+  position: fixed; inset: 0 0 auto 0;
+  background: var(--nav-bg);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 100;
+}
+.nav .container{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: var(--space-4) 0;
+}
+.nav-brand{ display:flex; align-items:center; gap: var(--space-3); }
+.logo{
+  width:48px; height:48px; border-radius: var(--border-radius);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-weight:800; font-size: var(--text-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  box-shadow: var(--shadow);
+}
+.brand-name{ font-weight:800; font-size: var(--text-lg); color: var(--nav-fg); }
+.nav-links{ display:none; list-style:none; gap: var(--space-6); }
+.nav-link{
+  color: var(--nav-link); text-decoration:none; font-weight:600;
+  transition: color .2s ease;
+}
+.nav-link:hover, .nav-link.active{ color: var(--nav-link-active); }
+@media (min-width:768px){ .nav-links{ display:flex; } }
 
-    if (action === "next-step") {
-      nextStep()
-    } else if (action === "prev-step") {
-      prevStep()
-    }
-  })
-
-  // Real-time validation
-  leadForm.addEventListener("input", validateField)
-  exitForm.addEventListener("input", validateField)
+/* -------------------------------------------------
+   Hero
+--------------------------------------------------*/
+.hero{
+  padding: calc(80px + var(--space-24)) 0 var(--space-24);
+  background: linear-gradient(135deg, #eef2ff 0%, #e5edf6 100%);
+  position: relative; overflow: hidden;
+}
+.hero::before{
+  content:""; position:absolute; inset:0;
+  background-image: radial-gradient(800px 400px at 20% 0%, rgba(14,165,233,.08), rgba(0,0,0,0));
+  pointer-events:none;
+}
+.hero-content{ position:relative; z-index:1; text-align:center; max-width:900px; margin:0 auto; }
+.hero-title{ margin-bottom: var(--space-8); }
+.hero-subtitle{
+  font-size: var(--text-xl);
+  color: var(--color-muted);                   /* darker on light, brighter in dark */
+  margin: 0 auto var(--space-12);
+  max-width: 720px; font-weight: 500; line-height: 1.5;
+}
+@media (prefers-color-scheme: dark){
+  .hero{ background: radial-gradient(1000px 600px at 50% -10%, rgba(14,165,233,.15), transparent), #0b1020; }
+  .hero-title{ text-shadow: 0 1px 0 rgba(0,0,0,.35); }
 }
 
-function nextStep() {
-  if (validateCurrentStep()) {
-    currentStep++
-    updateFormStep()
-    track("form_step_view", { step: currentStep })
+/* -------------------------------------------------
+   Buttons
+--------------------------------------------------*/
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:48px; padding: var(--space-4) var(--space-8);
+  border-radius: var(--border-radius);
+  border: 2px solid transparent;
+  font-size: var(--text-base); font-weight: 700;
+  cursor:pointer; text-decoration:none; transition: transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+  box-shadow: var(--shadow); position:relative; overflow:hidden;
+}
+.btn:focus{ outline:3px solid var(--color-primary); outline-offset:2px; border-radius: var(--border-radius-sm); }
+
+.btn-primary{ background: linear-gradient(135deg, var(--color-primary) 0%, #0ea5e9 100%); color:#fff; }
+.btn-primary:hover{ transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+
+.btn-secondary{
+  background: #fff; color: var(--color-primary);
+  border-color: var(--color-primary); box-shadow:none;
+}
+@media (prefers-color-scheme: dark){
+  .btn-secondary{ background: transparent; color: #e0f2fe; border-color:#38bdf8; }
+}
+.btn-secondary:hover{ background: var(--color-primary); color:#fff; box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+.btn-ghost{ background: transparent; color: var(--color-muted); box-shadow:none; }
+.btn-ghost:hover{ color: var(--color-fg); background: var(--color-card); }
+
+/* -------------------------------------------------
+   Cards & logos
+--------------------------------------------------*/
+.card{
+  background: var(--color-card); border:1px solid var(--color-border);
+  border-radius: var(--border-radius); padding: var(--space-8);
+  box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease;
+}
+.card:hover{ transform: translateY(-2px); box-shadow: var(--shadow-xl); }
+
+.social-proof{ padding: var(--space-16) 0; background: #fff; border-block: 1px solid var(--color-border); }
+.social-proof-text{
+  color: var(--color-muted); margin-bottom: var(--space-8);
+  font-size: var(--text-sm); font-weight:600; text-transform:uppercase; letter-spacing:.06em; text-align:center;
+}
+.logo-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap: var(--space-6); max-width:900px; margin:0 auto; }
+.client-logo{
+  padding: var(--space-6);
+  color: var(--color-fg);        /* stronger than muted */
+  opacity: .95;
+  text-align:center; font-weight:700;
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm); transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+}
+.client-logo:hover{ opacity:1; transform: translateY(-2px); box-shadow: var(--shadow); }
+
+/* -------------------------------------------------
+   Outcomes / Services
+--------------------------------------------------*/
+.outcomes{ padding: var(--space-24) 0; background: linear-gradient(135deg, #fafafa 0%, #f4f4f5 100%); }
+.outcomes-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap: var(--space-8); }
+.outcome-card{ text-align:center; padding: var(--space-8); background:#fff; border-radius: var(--border-radius); box-shadow: var(--shadow); border:1px solid var(--color-border); }
+.outcome-icon{ font-size: var(--text-5xl); margin-bottom: var(--space-6); display:block; }
+.outcome-card h3{ margin-bottom: var(--space-4); }
+.outcome-card p{ color: var(--color-muted); font-size: var(--text-lg); }
+
+.services{ padding: var(--space-24) 0; border-block:1px solid var(--color-border); }
+.section-title{ margin-bottom: var(--space-16); }
+.services-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); gap: var(--space-8); }
+.service-card{
+  background: var(--nav-bg);
+  padding: var(--space-8); border-radius: var(--border-radius); box-shadow: var(--shadow-lg); border:none;
+  color: var(--color-fg); transition: transform .3s ease, box-shadow .3s ease, background .3s ease;
+}
+.service-card:hover{ transform: translateY(-4px); box-shadow: var(--shadow-xl); background:#fff; }
+.service-icon{ font-size: var(--text-4xl); margin-bottom: var(--space-6); display:block; }
+.service-card p{ color: var(--color-muted); }
+
+/* -------------------------------------------------
+   Process / Use cases
+--------------------------------------------------*/
+.process{ padding: var(--space-20) 0; }
+.process-steps{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap: var(--space-8); }
+.process-step{ text-align:center; }
+.step-number{
+  width:60px; height:60px; background: var(--color-primary); color:#fff; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size: var(--text-xl); font-weight:700; margin:0 auto var(--space-4);
+}
+.process-step p{ color: var(--color-muted); }
+
+.use-cases{ padding: var(--space-20) 0; background: var(--color-border); }
+.use-cases-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap: var(--space-6); }
+.use-case-card{ background: var(--color-bg); padding: var(--space-6); border-radius: var(--border-radius); box-shadow: var(--shadow); }
+.use-case-card p{ color: var(--color-muted); }
+
+/* -------------------------------------------------
+   Case studies / Resources
+--------------------------------------------------*/
+.case-studies{ padding: var(--space-20) 0; }
+.case-studies-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr)); gap: var(--space-8); }
+.case-study-card{ padding: var(--space-8); border:1px solid var(--color-border); border-radius: var(--border-radius); }
+
+.resources{ padding: var(--space-20) 0; background: var(--color-border); }
+.lead-magnet{
+  background: var(--color-bg); padding: var(--space-8); border-radius: var(--border-radius);
+  text-align:center; margin-bottom: var(--space-12); box-shadow: var(--shadow);
+}
+.lead-magnet p{ color: var(--color-muted); margin-bottom: var(--space-6); }
+
+/* Accordion */
+.glossary{ margin-bottom: var(--space-12); }
+.accordion{ background: var(--color-bg); border-radius: var(--border-radius); overflow:hidden; box-shadow: var(--shadow); }
+.accordion-item{ border-bottom:1px solid var(--color-border); }
+.accordion-item:last-child{ border-bottom:none; }
+.accordion-header{
+  width:100%; padding: var(--space-4) var(--space-6); background:none; border:none; text-align:left;
+  font-size: var(--text-base); font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center; color: var(--color-fg);
+}
+.accordion-header:hover{ background: var(--color-border); }
+.accordion-content{ padding: 0 var(--space-6) var(--space-4); color: var(--color-muted); display:none; }
+.accordion-item.active .accordion-content{ display:block; }
+.accordion-item.active .accordion-icon{ transform: rotate(45deg); }
+.accordion-icon{ transition: transform .2s ease; }
+
+/* Comparison table */
+.table-wrapper{ overflow-x:auto; background: var(--color-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); }
+table{ width:100%; border-collapse: collapse; }
+th,td{ padding: var(--space-4); text-align:left; border-bottom:1px solid var(--color-border); }
+th{ background: var(--color-card); font-weight:700; color: var(--color-fg); }
+tbody tr:nth-child(odd){ background: rgba(0,0,0,.02); }
+@media (prefers-color-scheme: dark){ tbody tr:nth-child(odd){ background: rgba(255,255,255,.04); } }
+
+/* -------------------------------------------------
+   About / Contact / Footer
+--------------------------------------------------*/
+.about{ padding: var(--space-20) 0; }
+.about-content{ display:grid; grid-template-columns:1fr; gap: var(--space-12); }
+@media (min-width:768px){ .about-content{ grid-template-columns:2fr 1fr; } }
+.about-story p, .bio-placeholder p{ margin-bottom: var(--space-3); color: var(--color-muted); }
+
+.contact{
+  padding: var(--space-20) 0; background: var(--color-border); text-align:center;
+}
+.contact-content p{
+  color: var(--color-muted); margin-bottom: var(--space-8);
+  max-width:600px; margin-inline:auto;
+}
+
+.footer{ padding: var(--space-12) 0; border-top:1px solid var(--color-border); }
+.footer-content{ display:flex; flex-direction:column; gap: var(--space-6); align-items:center; text-align:center; }
+@media (min-width:768px){ .footer-content{ flex-direction:row; justify-content:space-between; text-align:left; } }
+.footer-links{ display:flex; flex-wrap:wrap; gap: var(--space-6); justify-content:center; }
+.footer-links a{ color: var(--color-fg); text-decoration:none; font-size: var(--text-sm); }
+.footer-links a:hover{ color: var(--color-primary); }
+
+/* -------------------------------------------------
+   Forms & modal
+--------------------------------------------------*/
+.modal{
+  position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; padding: var(--space-4);
+}
+.modal.active{ display:flex; }
+.modal-overlay{ position:absolute; inset:0; background: rgba(0,0,0,.5); }
+.modal-content{
+  position:relative; background: var(--color-bg); border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg); max-width:520px; width:100%; max-height:90vh; overflow-y:auto;
+}
+.modal-close{
+  position:absolute; top: var(--space-4); right: var(--space-4);
+  background:none; border:none; font-size: var(--text-2xl); cursor:pointer; color: var(--color-muted); z-index:1;
+}
+.modal-close:hover{ color: var(--color-fg); }
+
+.form-container{ padding: var(--space-8); }
+.form-header{ text-align:center; margin-bottom: var(--space-8); }
+.form-header h2{ margin-bottom: var(--space-6); }
+
+.stepper{ display:flex; justify-content:center; gap: var(--space-4); }
+.step{
+  width:40px; height:40px; border-radius:50%; background: var(--color-border); color: var(--color-muted);
+  display:flex; align-items:center; justify-content:center; font-weight:700; transition: all .2s ease;
+}
+.step.active{ background: var(--color-primary); color:#fff; }
+.step.completed{ background: var(--color-success); color:#fff; }
+
+.form-step{ display:none; }
+.form-step.active{ display:block; }
+
+.form-group{ margin-bottom: var(--space-6); }
+.form-group label{ display:block; margin-bottom: var(--space-2); font-weight:600; color: var(--color-fg); }
+.form-group input, .form-group select, .form-group textarea{
+  width:100%; min-height:44px; padding: var(--space-3);
+  border:1px solid var(--color-border); border-radius: var(--border-radius);
+  background: var(--color-bg); color: var(--color-fg); font-size: var(--text-base);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus{
+  outline:none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(14,165,233,.15);
+}
+.form-group textarea{ resize: vertical; min-height: 90px; }
+
+.checkbox-group{ display:flex; flex-direction:column; gap: var(--space-3); }
+.checkbox-label{ display:flex; align-items:center; gap: var(--space-3); cursor:pointer; font-weight:normal; }
+.checkbox-label input[type="checkbox"]{ width:auto; margin:0; }
+
+.error-message{ color: var(--color-error); font-size: var(--text-sm); margin-top: var(--space-2); display:none; }
+.error-message.active{ display:block; }
+.form-group.error input, .form-group.error select, .form-group.error textarea{ border-color: var(--color-error); }
+
+.form-actions{ display:flex; gap: var(--space-4); justify-content:space-between; margin-top: var(--space-8); }
+.form-actions .btn{ flex:1; }
+
+/* Success view */
+.success-view{ text-align:center; padding: var(--space-8); }
+.success-content{ max-width:400px; margin:0 auto; }
+.success-icon{ font-size: var(--text-4xl); margin-bottom: var(--space-6); }
+.success-content p{ color: var(--color-muted); margin-bottom: var(--space-8); }
+
+/* -------------------------------------------------
+   Mobile sticky CTA
+--------------------------------------------------*/
+.mobile-cta{
+  position:fixed; inset: auto 0 0 0; background: var(--color-bg);
+  border-top:1px solid var(--color-border); padding: var(--space-4);
+  display:flex; gap: var(--space-3); z-index:50;
+}
+.mobile-cta .btn{ flex:1; font-size: var(--text-sm); }
+@media (min-width:768px){ .mobile-cta{ display:none; } }
+
+/* -------------------------------------------------
+   Utilities & a11y
+--------------------------------------------------*/
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* ===== Contrast Hotfix (cards & tiles) ===== */
+.outcome-card h3,
+.service-card h3,
+.use-case-card h3 {
+  color: var(--color-fg) !important;
+  opacity: 1 !important;
+}
+
+.outcome-card p,
+.service-card p,
+.use-case-card p {
+  color: #1f2937 !important;   /* strong slate on light */
+  opacity: 1 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .outcome-card p,
+  .service-card p,
+  .use-case-card p {
+    color: #cbd5e1 !important; /* readable on dark */
   }
 }
 
-function prevStep() {
-  currentStep--
-  updateFormStep()
-  track("form_step_view", { step: currentStep })
+/* Ensure card surfaces don't reduce text contrast */
+.outcome-card,
+.service-card,
+.use-case-card {
+  background: #ffffff !important;            /* solid white on light */
+  border: 1px solid var(--color-border) !important;
 }
 
-function updateFormStep() {
-  // Update step indicators
-  document.querySelectorAll(".step").forEach((step, index) => {
-    step.classList.remove("active", "completed")
-    if (index + 1 < currentStep) {
-      step.classList.add("completed")
-    } else if (index + 1 === currentStep) {
-      step.classList.add("active")
-    }
-  })
-
-  // Update form steps
-  document.querySelectorAll(".form-step").forEach((step, index) => {
-    step.classList.remove("active")
-    if (index + 1 === currentStep || (currentStep === 4 && step.classList.contains("success-view"))) {
-      step.classList.add("active")
-    }
-  })
-}
-
-function validateCurrentStep() {
-  const currentStepElement = document.querySelector(`.form-step[data-step="${currentStep}"]`)
-  const requiredFields = currentStepElement.querySelectorAll("[required]")
-  let isValid = true
-
-  requiredFields.forEach((field) => {
-    if (!validateField({ target: field })) {
-      isValid = false
-    }
-  })
-
-  // Special validation for step 2 checkboxes
-  if (currentStep === 2) {
-    const platformCheckboxes = currentStepElement.querySelectorAll('input[name="platforms"]:checked')
-    if (platformCheckboxes.length === 0) {
-      showFieldError(currentStepElement.querySelector(".checkbox-group"), "Please select at least one platform")
-      isValid = false
-    }
-  }
-
-  return isValid
-}
-
-function validateField(e) {
-  const field = e.target
-  const value = field.value.trim()
-  let isValid = true
-  let errorMessage = ""
-
-  // Clear previous errors
-  clearFieldError(field)
-
-  // Required field validation
-  if (field.hasAttribute("required") && !value) {
-    errorMessage = "This field is required"
-    isValid = false
-  }
-
-  // Email validation
-  if (field.type === "email" && value) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const businessEmailRegex = /@(gmail|yahoo|hotmail|outlook|aol)\./i
-
-    if (!emailRegex.test(value)) {
-      errorMessage = "Please enter a valid email address"
-      isValid = false
-    } else if (businessEmailRegex.test(value)) {
-      errorMessage = "Please use your business email address"
-      isValid = false
-    }
-  }
-
-  if (!isValid) {
-    showFieldError(field, errorMessage)
-  }
-
-  return isValid
-}
-
-function showFieldError(field, message) {
-  const formGroup = field.closest(".form-group") || field.parentElement
-  const errorElement = formGroup.querySelector(".error-message")
-
-  formGroup.classList.add("error")
-  if (errorElement) {
-    errorElement.textContent = message
-    errorElement.classList.add("active")
+@media (prefers-color-scheme: dark) {
+  .outcome-card,
+  .service-card,
+  .use-case-card {
+    background: var(--color-card) !important; /* solid dark surface */
   }
 }
 
-function clearFieldError(field) {
-  const formGroup = field.closest(".form-group") || field.parentElement
-  const errorElement = formGroup.querySelector(".error-message")
+/* ===== MMP Comparison (high-contrast, polished) ===== */
+.comparison-table { margin-bottom: var(--space-12); }
 
-  formGroup.classList.remove("error")
-  if (errorElement) {
-    errorElement.classList.remove("active")
+.table-wrapper{
+  overflow: hidden;                 /* keep rounded corners clean */
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+table{ width:100%; border-collapse: separate; border-spacing: 0; color: var(--color-fg); }
+
+th, td{
+  padding: 18px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+th{
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: #eef2f7;              /* light */
+  color: #0b1220;
+}
+
+tbody tr:nth-child(odd){ background: #f7f8fb; } /* subtle zebra */
+
+tbody tr:last-child td{ border-bottom: 0; }
+
+/* Row hover for readability */
+tbody tr:hover{
+  background: #eaf2ff;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark){
+  .table-wrapper{ background: #0f172a; border-color: #2b3547; }
+  th{
+    background: #111827;            /* deep header */
+    color: #f1f5f9;
+    border-bottom-color: #2b3547;
+  }
+  td{
+    color: #e5e7eb;
+    border-bottom-color: #2b3547;
+  }
+  tbody tr:nth-child(odd){ background: rgba(255,255,255,0.04); }
+  tbody tr:hover{ background: rgba(56,189,248,0.10); } /* cyan tint */
+}
+
+/* Table caption note */
+.table-note{
+  margin-top: 12px;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* ===== Blog / Latest Insights readability ===== */
+.blog-teaser h3{
+  margin: 28px 0 16px;
+}
+
+.blog-grid{ gap: 20px; }
+
+.blog-card{
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
+  border-radius: 14px;
+}
+
+.blog-card h4{
+  font-weight: 800;
+  color: var(--color-fg);
+}
+
+.blog-card p{
+  color: var(--color-muted);
+}
+
+.reading-time{
+  background: rgba(0,0,0,0.06);
+  color: var(--color-fg);
+}
+@media (prefers-color-scheme: dark){
+  .reading-time{
+    background: rgba(255,255,255,0.08);
+    color: #e5e7eb;
   }
 }
 
-async function handleLeadFormSubmit(e) {
-  e.preventDefault()
+/* ===== Latest Insights - layout + contrast fix ===== */
+.blog-teaser h3 { margin: 0 0 16px !important; }
 
-  if (!validateCurrentStep()) {
-    return
-  }
-
-  const formData = new FormData(leadForm)
-  const data = Object.fromEntries(formData.entries())
-
-  // Handle multi-select fields
-  data.platforms = formData.getAll("platforms")
-  data.markets = formData.getAll("markets")
-
-  try {
-    const response = await fetch(CONFIG.LEAD_WEBHOOK_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
-
-    if (response.ok) {
-      // Mark email as captured
-      localStorage.setItem("emailCaptured", "true")
-      emailCaptured = true
-
-      // Show success step
-      currentStep = 4
-      updateFormStep()
-
-      track("form_submit_success", {
-        email: data.email,
-        company: data.company,
-        urgency: data.urgency,
-      })
-    } else {
-      throw new Error("Submission failed")
-    }
-  } catch (error) {
-    console.error("Form submission error:", error)
-    alert("There was an error submitting your request. Please try again or contact us directly.")
-    track("form_submit_error", { error: error.message })
-  }
+.blog-grid{
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 24px !important;
 }
 
-async function handleExitFormSubmit(e) {
-  e.preventDefault()
-
-  const email = document.getElementById("exit-email").value.trim()
-
-  if (!email || !validateField({ target: document.getElementById("exit-email") })) {
-    return
-  }
-
-  // Mark email as captured
-  localStorage.setItem("emailCaptured", "true")
-  emailCaptured = true
-
-  // Close modal and trigger download
-  closeModal(exitModal)
-  handleTemplateDownload()
-
-  track("exit_intent_conversion", { email })
+.blog-card{
+  background: var(--color-bg) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 14px !important;
+  padding: var(--space-6) !important;
+  box-shadow: var(--shadow) !important;
+  transition: transform .2s ease, box-shadow .2s ease !important;
+}
+.blog-card:hover{
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
-function handleTemplateDownload() {
-  if (!emailCaptured) {
-    // Show exit modal for email capture
-    openModal(exitModal)
-    return
-  }
-
-  // Create and trigger download
-  const csvContent = generateTrackingPlanCSV()
-  const blob = new Blob([csvContent], { type: "text/csv" })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "tracking-plan-template.csv"
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  window.URL.revokeObjectURL(url)
-
-  track("template_download", { gated: !emailCaptured })
+.blog-card h4{
+  margin-bottom: 8px !important;
+  font-weight: 700 !important;      /* slightly lighter than 800 */
+  color: var(--color-fg) !important;
+  letter-spacing: -0.01em !important;
+}
+.blog-card p{
+  color: var(--color-muted) !important;
+  margin-bottom: 10px !important;
 }
 
-function generateTrackingPlanCSV() {
-  const csvData = [
-    ["event_name", "platform", "param_1", "param_2", "revenue_param", "priority", "notes", "skan_mapping"],
-    ["app_open", "both", "source", "medium", "", "high", "Track app launches and attribution", "install"],
-    ["purchase", "both", "product_id", "category", "revenue", "critical", "In-app purchase events", "purchase"],
-    [
-      "subscription_start",
-      "both",
-      "plan_type",
-      "billing_cycle",
-      "subscription_value",
-      "critical",
-      "New subscription events",
-      "subscribe",
-    ],
-    ["level_complete", "both", "level_id", "score", "", "medium", "Game progression tracking", "level_achieved"],
-    ["add_to_cart", "both", "product_id", "quantity", "value", "medium", "E-commerce funnel tracking", "add_to_cart"],
-    ["registration", "both", "method", "user_type", "", "high", "User account creation", "complete_registration"],
-    [
-      "tutorial_complete",
-      "both",
-      "tutorial_id",
-      "completion_time",
-      "",
-      "medium",
-      "Onboarding completion",
-      "tutorial_completion",
-    ],
-    ["share_content", "both", "content_type", "method", "", "low", "Social sharing events", "share"],
-    ["search", "both", "query", "results_count", "", "low", "In-app search behavior", "search"],
-    ["video_view", "both", "video_id", "duration", "", "medium", "Video engagement tracking", "content_view"],
-  ]
-
-  return csvData.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n")
+.blog-meta{
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
 }
 
-// Accordion functionality
-function initializeAccordion() {
-  document.querySelectorAll(".accordion-header").forEach((header) => {
-    header.addEventListener("click", function () {
-      const item = this.parentElement
-      const isActive = item.classList.contains("active")
-
-      // Close all accordion items
-      document.querySelectorAll(".accordion-item").forEach((item) => {
-        item.classList.remove("active")
-        item.querySelector(".accordion-header").setAttribute("aria-expanded", "false")
-      })
-
-      // Open clicked item if it wasn't active
-      if (!isActive) {
-        item.classList.add("active")
-        this.setAttribute("aria-expanded", "true")
-      }
-
-      track("glossary_click", { term: this.textContent.trim() })
-    })
-  })
+.reading-time{
+  display: inline-block !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  font-size: var(--text-sm) !important;
+  background: rgba(0,0,0,0.07) !important;
+  color: var(--color-fg) !important;
 }
 
-// Exit intent functionality (desktop only)
-function initializeExitIntent() {
-  if (window.innerWidth < 768) return // Mobile skip
-
-  let mouseLeaveTimer
-
-  document.addEventListener("mouseleave", (e) => {
-    if (e.clientY <= 0 && !exitIntentShown && !emailCaptured) {
-      mouseLeaveTimer = setTimeout(() => {
-        openModal(exitModal)
-        exitIntentShown = true
-        track("exit_intent_shown")
-      }, 100)
-    }
-  })
-
-  document.addEventListener("mouseenter", () => {
-    if (mouseLeaveTimer) {
-      clearTimeout(mouseLeaveTimer)
-    }
-  })
+@media (prefers-color-scheme: dark){
+  .blog-card{ background: #111827 !important; border-color: #2b3547 !important; }
+  .reading-time{ background: rgba(255,255,255,0.08) !important; color: #e5e7eb !important; }
 }
-
-// Utility functions
-function debounce(func, wait) {
-  let timeout
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout)
-      func(...args)
-    }
-    clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
-  }
-}
-
-// Performance optimization
-window.addEventListener("scroll", debounce(updateActiveNav, 100))
-
-// Error handling
-window.addEventListener("error", (e) => {
-  console.error("JavaScript error:", e.error)
-  track("js_error", {
-    message: e.message,
-    filename: e.filename,
-    lineno: e.lineno,
-  })
-})
-
-// Expose CONFIG for easy customization
-window.SIGNALFLOW_CONFIG = CONFIG
